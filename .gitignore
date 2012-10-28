@@ -1,0 +1,6 @@
+
+# Build directory.
+_site
+
+# Vi swap files.
+*.swp
