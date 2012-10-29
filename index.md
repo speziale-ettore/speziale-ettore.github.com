@@ -4,7 +4,7 @@ title: Home
 ---
 {% include JB/setup %}
 
-I am Speziale Ettore, an Italian programmer with special interest in compilers, parallel runtimes and hardware.
+I am Ettore Speziale, an Italian programmer with special interest in compilers, parallel runtimes and hardware.
 This site contains material about academic research, teaching, and some personal information.
 
 I am doing a Ph.D. in the [Formal Languages and Compilers Group][www/flac] of Politecnico di Milano.
