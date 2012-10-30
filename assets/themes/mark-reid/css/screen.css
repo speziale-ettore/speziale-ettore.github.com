@@ -100,6 +100,7 @@ sup { line-height: 1ex; }
 }
 /* @end */
 
+.center { display: block; margin-left: auto; margin-right: auto; }
 .right { float: right; clear: left; }
 .left { float: left; clear: right; }
 .inset {
@@ -107,6 +108,7 @@ sup { line-height: 1ex; }
         padding: 2px;
         margin: 0em 0.8em 0.8em 0.8em;
 }
+.center.inset { margin-right: auto; margin-left: auto !important; }
 .right.inset { margin-right: 0 !important; }
 .left.inset { margin-left: 0 !important; }
 .quiet {
