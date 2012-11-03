@@ -32,6 +32,8 @@ Short list of my publications:
 * Andrea di Biagio, Ettore Speziale, and Giovanni Agosta. Exploiting Thread-data Affinity in OpenMP with Data Access Pattern. _In Euro-Par, 2011_
 * Ettore Speziale, Andrea di Biagio, and Giovanni Agosta. An Optimized Reduction Design to Minimize Atomic Operations in Shared Memory Multiprocessors. _In HIPS, 2011_
 
+See [Publications](/info/publications.html) for a full list.
+
 Contact
 -------
 
