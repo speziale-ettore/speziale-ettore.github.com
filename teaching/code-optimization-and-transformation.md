@@ -10,8 +10,8 @@ My duty is to teach student how theoretical concept are implemented in a real co
 
 In order to get a pass grade, students have to take an oral examination, and write a simple project about exploiting some compilation environment.
 
-2012
-----
+Academic Year 2011-2012
+-----------------------
 
 This year we selected LLVM as the compilation tool.
 Its main strength is _modularity_: code is well organized, and playing with him it is not a big deal.
