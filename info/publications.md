@@ -16,8 +16,6 @@ It also enables us to optimize code fragments multiple times, depending on the s
 * Teaser: [a-lightweight-approach-to-compiling-and-scheduling-tsr.pdf](/info/download/a-lightweight-approach-to-compiling-and-scheduling-tsr.pdf)
 * Poster: [a-lightweight-approach-to-compiling-and-scheduling-pos.pdf](/info/download/a-lightweight-approach-to-compiling-and-scheduling-pos.pdf)
 
-__Note__: PDFs not available -- no time for recompile, sorry.
-
 ---
 
 2011
@@ -45,8 +43,6 @@ We prove the effectiveness of the proposed technique on the NAS parallel benchma
 
 * Article: [exploiting-thread-data-affinity-in-openmp-with-art.pdf](/info/download/exploiting-thread-data-affinity-in-openmp-with-art.pdf)
 * Lecture: [exploiting-thread-data-affinity-in-openmp-with-lec.pdf](/info/download/exploiting-thread-data-affinity-in-openmp-with-lec.pdf)
-
-__Note__: PDFs not available -- no time for recompile, sorry.
 
 Ettore Speziale, Andrea di Biagio, and Giovanni Agosta. An Optimized Reduction Design to Minimize Atomic Operations in Shared Memory Multiprocessors. _In HIPS, 2011_
 
