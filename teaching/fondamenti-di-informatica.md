@@ -84,7 +84,6 @@ Purtroppo durante la migrazione del sito ho perso le soluzioni e non ho quindi p
 
 Cheat Sheet
 -----------
-
 Ricordare a memoria tutte le funzionalità di un linguaggio di programmazione, di un programma, o di un sistema operativo è praticamente impossible.
 Qui sotto sono disponbili alcuni cheat-sheet che possono tornare utili durante il laboratorio:
 
