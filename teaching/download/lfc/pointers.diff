@@ -1,0 +1,49 @@
+
+diff -r 4a0654b18dbe acse/Acse.y
+--- a/acse/Acse.y	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.y	Sat Jun 18 17:46:16 2011 +0200
+@@ -117,6 +117,7 @@
+ %token AND_OP OR_OP NOT_OP
+ %token ASSIGN LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ
+ %token ANDAND OROR
++%token STAR_OP ADDR_OP
+ %token COMMA
+ %token FOR
+ %token RETURN
+@@ -151,7 +152,7 @@
+ %left SHL_OP SHR_OP
+ %left MINUS PLUS
+ %left MUL_OP DIV_OP
+-%right NOT
++%right NOT STAR_OP ADDR_OP
+ 
+ /*=========================================================================
+                          BISON GRAMMAR
+@@ -567,6 +568,27 @@
+                                  (program, exp_r0, $2, SUB);
+                         }
+                      }
++   | MUL_OP IDENTIFIER
++     %prec STAR_OP {
++                      int dest_reg = getNewRegister(program);
++                      int id_reg = get_symbol_location(program, $2, 0);
++
++                      gen_add_instruction(program,
++                                          dest_reg,
++                                          REG_0,
++                                          id_reg,
++                                          CG_INDIRECT_SOURCE);
++                      $$ = create_expression(dest_reg, REGISTER);
++                   }
++   | AND_OP IDENTIFIER
++     %prec ADDR_OP {
++                      int dest_reg = getNewRegister(program);
++                      t_axe_label *id_label = getLabelFromVariableID(program,
++                                                                     $2);
++
++                      gen_mova_instruction(program, dest_reg, id_label, 0);
++                      $$ = create_expression(dest_reg, REGISTER);
++                   }
+ ;
+ 
+ %%

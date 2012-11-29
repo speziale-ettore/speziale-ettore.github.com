@@ -1,0 +1,252 @@
+
+diff -r 4a0654b18dbe -r 8cc292b826a4 acse/Acse.lex
+--- a/acse/Acse.lex	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.lex	Tue Mar 01 21:42:11 2011 +0100
+@@ -99,6 +99,11 @@
+ "read"            { return READ; }
+ "write"           { return WRITE; }
+ 
++"switch"          { return SWITCH; }
++"case"            { return CASE; }
++"default"         { return DEFAULT; }
++"break"           { return BREAK; }
++
+ {ID}              { yylval.svalue=strdup(yytext); return IDENTIFIER; }
+ {DIGIT}+          { yylval.intval = atoi( yytext );
+                     return(NUMBER); }
+diff -r 4a0654b18dbe -r 8cc292b826a4 acse/Acse.y
+--- a/acse/Acse.y	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.y	Tue Mar 01 21:42:11 2011 +0100
+@@ -90,6 +90,7 @@
+ 
+ t_io_infos *file_infos;    /* input and output files used by the compiler */
+ 
++t_switch_statement cur_switch;
+ %}
+ 
+ %expect 1
+@@ -123,6 +124,11 @@
+ %token READ
+ %token WRITE
+ 
++%token SWITCH
++%token <label> CASE
++%token DEFAULT
++%token BREAK
++
+ %token <label> DO
+ %token <while_stmt> WHILE
+ %token <label> IF
+@@ -248,6 +254,8 @@
+ ;
+ 
+ control_statement : if_statement         { /* does nothing */ }
++            | switch_statement           { /* does nothing */ }
++            | break_statement SEMI       { /* does nothing */ }
+             | while_statement            { /* does nothing */ }
+             | do_while_statement SEMI    { /* does nothing */ }
+             | return_statement SEMI      { /* does nothing */ }
+@@ -350,6 +358,83 @@
+                code_block { $$ = $1; }
+ ;
+ 
++switch_statement : SWITCH
++                   {
++                      cur_switch = create_switch_statement();
++                      cur_switch.label_end = newLabel(program);
++                   }
++                   LPAR exp RPAR {
++                     cur_switch.guard = $4;
++                   }
++                   LBRACE
++                   case_list_statement
++                   default_statement
++                   RBRACE
++                   {
++                      assignLabel(program, cur_switch.label_end);
++                      reset_switch(&cur_switch);
++                   }
++;
++
++case_list_statement : case_statement case_list_statement
++                    | case_statement
++                    ;
++
++case_statement : CASE
++                 {
++                   $1 = newLabel(program);
++                 }
++                 NUMBER COLON
++                 {
++                    t_axe_expression diff;
++                    t_axe_expression case_const;
++
++                    case_const = create_expression($3, IMMEDIATE);
++                    diff = handle_bin_numeric_op(program,
++                                                 cur_switch.guard,
++                                                 case_const, SUB);
++
++                    if(diff.expression_type == IMMEDIATE) {
++                      int temp = getNewRegister(program);
++                      gen_addi_instruction(program,
++                                           temp,
++                                           REG_0,
++                                           diff.value);
++                    }
++
++                    gen_bne_instruction(program, $1, 0);
++
++                    /* this is not the first case */
++                    if(cur_switch.label_next)
++                      assignLabel(program, cur_switch.label_next);
++
++                    cur_switch.label_next = newLabel(program);
++                 }
++                 code_block
++                 {
++                    /* jump to next case, fall-thought path */
++                    gen_bt_instruction(program, cur_switch.label_next, 0);
++
++                    /* here starts next case equality test */
++                    assignLabel(program, $1);
++                 }
++               ;
++
++break_statement : BREAK
++                  {
++                    if(!valid_switch(cur_switch))
++                      notifyError(AXE_INVALID_INSTRUCTION);
++
++                    gen_bt_instruction(program, cur_switch.label_end, 0);
++                  }
++
++default_statement: DEFAULT COLON
++                   {
++                      /* fix label for the last case */
++                      assignLabel(program, cur_switch.label_next);
++                   }
++                   code_block;
++
+ while_statement  : WHILE
+                   {
+                      /* initialize the value of the non-terminal */
+diff -r 4a0654b18dbe -r 8cc292b826a4 acse/axe_struct.c
+--- a/acse/axe_struct.c	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/axe_struct.c	Tue Mar 01 21:42:11 2011 +0100
+@@ -100,6 +100,26 @@
+    return statement;
+ }
+ 
++t_switch_statement create_switch_statement() {
++  t_switch_statement statement;
++
++  statement.label_end = NULL;
++  statement.label_next = NULL;
++  statement.guard = create_expression(0, IMMEDIATE);
++
++  return statement;
++}
++
++int valid_switch(t_switch_statement stmt) {
++  return stmt.label_end != NULL;
++}
++
++void reset_switch(t_switch_statement *stmt) {
++  stmt->label_end = NULL;
++  stmt->label_next = NULL;
++  stmt->guard = create_expression(0, IMMEDIATE);
++}
++
+ t_axe_label * alloc_label(int value)
+ {
+    t_axe_label *result;
+diff -r 4a0654b18dbe -r 8cc292b826a4 acse/axe_struct.h
+--- a/acse/axe_struct.h	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/axe_struct.h	Tue Mar 01 21:42:11 2011 +0100
+@@ -114,6 +114,13 @@
+                                     * that follows the while construct */
+ } t_while_statement;
+ 
++typedef struct t_switch_statement
++{
++   t_axe_label *label_end;  /* points to the end of the switch */
++   t_axe_label *label_next; /* points to the next case */
++   t_axe_expression guard;  /* the expression to match */
++} t_switch_statement;
++
+ /* create a label */
+ extern t_axe_label * alloc_label(int value);
+ 
+@@ -123,6 +130,15 @@
+ /* create an instance that will mantain infos about a while statement */
+ extern t_while_statement create_while_statement();
+ 
++/* create a new empty switch statement */
++extern t_switch_statement create_switch_statement();
++
++/* check whether the given switch is valid */
++extern int valid_switch(t_switch_statement stmt);
++
++/* make stmt invalid */
++extern void reset_switch(t_switch_statement *stmt);
++
+ /* create an instance of `t_axe_register' */
+ extern t_axe_register * alloc_register(int ID, int indirect);
+ 
+diff -r 4a0654b18dbe -r 8cc292b826a4 tests/Makefile
+--- a/tests/Makefile	Tue Feb 02 17:19:12 2010 +0100
++++ b/tests/Makefile	Tue Mar 01 21:42:11 2011 +0100
+@@ -1,7 +1,8 @@
+ asm=$(CURDIR)/../bin/asm
+ acse=$(CURDIR)/../bin/acse
+ export asm acse
+-dirs:=arrays sum dowhile fact mult_table power semi assign arrays arrays2 misc
++dirs:=arrays sum dowhile fact mult_table power semi assign arrays arrays2 misc \
++      switch
+ 
+ test :
+ 	for i in $(dirs); do $(MAKE) -C $$i -f ../Makefile.test ; done
+diff -r 4a0654b18dbe -r 8cc292b826a4 tests/switch/fall-through.src
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/tests/switch/fall-through.src	Tue Mar 01 21:42:11 2011 +0100
+@@ -0,0 +1,17 @@
++
++int guard;
++
++read(guard);
++
++switch(guard) {
++  case 1: {
++    write(1);
++  }
++  case 2: {
++    write(2);
++    break;
++  }
++  default: {
++    write(3);
++  }
++}
+diff -r 4a0654b18dbe -r 8cc292b826a4 tests/switch/simple.src
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/tests/switch/simple.src	Tue Mar 01 21:42:11 2011 +0100
+@@ -0,0 +1,19 @@
++
++int guard;
++
++read(guard);
++
++switch(guard) {
++  case 1: {
++    write(1);
++    break;
++  }
++  case 2: {
++    write(2);
++    write(3);
++    break;
++  }
++  default: {
++    write(3);
++  }
++}

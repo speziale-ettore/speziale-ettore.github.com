@@ -7,7 +7,7 @@ title: Fondamenti di Informatica
 Il corso è erogato agli studenti del primo anno di Ingegneria Informatica.
 Si insegnano i rudimenti della programmazione tramite il linguaggio C.
 Gli argomenti trattati includono sia aspetti teorici, quali la progettazione di un algoritmo, che pratici (programmazione tramite il linguaggio C).
-La docente del corso è la Professoressa [Cristiana Bolchini](bolchini@elet.polimi.it).
+La docente del corso è la Professoressa [Cristiana Bolchini](mailto:bolchini@elet.polimi.it).
 Assieme ad altri colleghi, mi occupo di assistere gli studenti durante le attività di laboratorio previste dal corso.
 
 Si ricorda agli studenti che per poter accedere alla prova in classe è necessario passare l'esame pratico, solitamente fissato durante l'ultima lezione di laboratorio.

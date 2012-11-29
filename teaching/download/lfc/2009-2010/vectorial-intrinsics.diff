@@ -1,0 +1,242 @@
+diff -r 4a0654b18dbe acse/Acse.lex
+--- a/acse/Acse.lex	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.lex	Thu Nov 29 10:57:56 2012 +0100
+@@ -98,6 +98,8 @@
+ "return"          { return RETURN; }
+ "read"            { return READ; }
+ "write"           { return WRITE; }
++"vec_add"         { return VEC_ADD; }
++"vec_sub"         { return VEC_SUB; }
+ 
+ {ID}              { yylval.svalue=strdup(yytext); return IDENTIFIER; }
+ {DIGIT}+          { yylval.intval = atoi( yytext );
+diff -r 4a0654b18dbe acse/Acse.y
+--- a/acse/Acse.y	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.y	Thu Nov 29 10:57:56 2012 +0100
+@@ -24,6 +24,7 @@
+ #include "axe_errors.h"
+ #include "collections.h"
+ #include "axe_expressions.h"
++#include "axe_vec.h"
+ #include "axe_gencode.h"
+ #include "axe_utils.h"
+ #include "axe_array.h"
+@@ -122,6 +123,8 @@
+ %token RETURN
+ %token READ
+ %token WRITE
++%token VEC_ADD
++%token VEC_SUB
+ 
+ %token <label> DO
+ %token <while_stmt> WHILE
+@@ -240,10 +243,11 @@
+ ;
+ 
+ /* A statement can be either an assignment statement or a control statement
+- * or a read/write statement or a semicolon */
++ * or a read/write or a vectorial statement or a semicolon */
+ statement   : assign_statement SEMI      { /* does nothing */ }
+             | control_statement          { /* does nothing */ }
+             | read_write_statement SEMI  { /* does nothing */ }
++            | vec_statement SEMI         { /* does nothing */ }
+             | SEMI            { gen_nop_instruction(program); }
+ ;
+ 
+@@ -257,6 +261,10 @@
+                      | write_statement { /* does nothing */ }
+ ;
+ 
++vec_statement : vec_add_statement { /* does nothing */ }
++              | vec_sub_statement { /* does nothing */ }
++;
++
+ assign_statement : IDENTIFIER LSQUARE exp RSQUARE ASSIGN exp
+             {
+                /* Notify to `program' that the value $6
+@@ -454,6 +462,24 @@
+             }
+ ;
+ 
++vec_add_statement : VEC_ADD LPAR
++                    IDENTIFIER COMMA
++                    IDENTIFIER COMMA
++                    IDENTIFIER RPAR
++            {
++               handle_vec_op (program, $3, $5, $7, VADD);
++            }
++;
++
++vec_sub_statement : VEC_SUB LPAR
++                    IDENTIFIER COMMA
++                    IDENTIFIER COMMA
++                    IDENTIFIER RPAR
++            {
++               handle_vec_op (program, $3, $5, $7, VSUB);
++            }
++;
++
+ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
+    | IDENTIFIER  {
+                      int location;
+diff -r 4a0654b18dbe acse/axe_constants.h
+--- a/acse/axe_constants.h	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/axe_constants.h	Thu Nov 29 10:57:56 2012 +0100
+@@ -82,6 +82,10 @@
+ #define AXE_WRITE 62
+ #define INVALID_OPCODE -1
+ 
++/* vectorial operations */
++#define VADD 100
++#define VSUB 101
++
+ /* data types */
+ #define INTEGER_TYPE 0
+ #define UNKNOWN_TYPE -1
+diff -r 4a0654b18dbe acse/axe_vec.c
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/acse/axe_vec.c	Thu Nov 29 10:57:56 2012 +0100
+@@ -0,0 +1,79 @@
++/*
++ * Ettore Speziale
++ * Politecnico di Milano, 2010
++ *             
++ * axe_vec.c      
++ * Formal Languages & Compilers Machine, 2009/2010
++ *             
++ */          
++
++#include "axe_vec.h"
++
++void handle_vec_op(t_program_infos *program,
++        char *destID, char *sourceID1, char *sourceID2, int vec_op)
++{
++    t_axe_variable *dest_var = getVariable (program, destID);
++    t_axe_variable *source_var1 = getVariable (program, sourceID1);
++    t_axe_variable *source_var2 = getVariable (program, sourceID2);
++
++    if (!dest_var->isArray || !source_var1->isArray || !source_var2->isArray)
++      notifyError (AXE_INVALID_TYPE);
++
++    if (dest_var->arraySize != source_var1->arraySize ||
++        dest_var->arraySize != source_var2->arraySize)
++      notifyError (AXE_INVALID_ARRAY_SIZE);
++
++    int index_register, dest_register;
++    t_axe_expression index, dest;
++    t_axe_label *start, *end;
++    
++    /* Init loop counter */
++    index_register = getNewRegister (program);
++    index = create_expression (index_register, REGISTER);
++    gen_mova_instruction (program, index_register, NULL,  dest_var->arraySize);
++
++    /* We need a "tmp" register */
++    dest_register = getNewRegister (program);
++    dest = create_expression (dest_register, REGISTER);
++
++    start = assignNewLabel (program);
++    end = newLabel (program);
++
++    /* Whether the arrays have been completely scanned */
++    gen_andb_instruction (program, index_register, index_register,
++                          index_register, CG_DIRECT_ALL);
++    gen_beq_instruction (program, end, 0);
++
++    /* Compute index */
++    gen_subi_instruction (program, index_register, index_register, 1);
++
++    /* Load operands */
++    int src1_register = loadArrayElement (program, sourceID1, index);
++    int src2_register = loadArrayElement (program, sourceID2, index);
++    
++    /* Perform operation */
++    switch (vec_op)
++    {
++        case VADD:
++            gen_add_instruction (program, dest_register, src1_register,
++                                 src2_register, CG_DIRECT_ALL);
++            break;
++
++        case VSUB:
++            gen_sub_instruction (program, dest_register, src1_register,
++                                 src2_register, CG_DIRECT_ALL);
++            break;
++
++        default:
++            notifyError (AXE_INVALID_OPCODE);
++    }
++
++    /* Store to destination array */
++    storeArrayElement (program, destID, index, dest);
++
++    /* Jump to header */
++    gen_bt_instruction (program, start, 0);
++
++    /* Fix exit label */
++    assignLabel (program, end);
++}
+diff -r 4a0654b18dbe acse/axe_vec.h
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/acse/axe_vec.h	Thu Nov 29 10:57:56 2012 +0100
+@@ -0,0 +1,19 @@
++/*
++ * Ettore Speziale
++ * Politecnico di Milano, 2010
++ * 
++ * axe_vec.h
++ * Formal Languages & Compilers Machine, 2009/2010
++ * 
++ */
++
++#ifndef _AXE_EXPRESSIONS_H
++#define _AXE_EXPRESSIONS_H
++
++#include "axe_engine.h"
++
++/* Generates instructions for vectorial operations. */
++extern void handle_vec_op(t_program_infos *program,
++        char *destID, char *sourceID1, char *sourceID2, int vec_op);
++
++#endif 
+diff -r 4a0654b18dbe tests/Makefile
+--- a/tests/Makefile	Tue Feb 02 17:19:12 2010 +0100
++++ b/tests/Makefile	Thu Nov 29 10:57:56 2012 +0100
+@@ -1,7 +1,8 @@
+ asm=$(CURDIR)/../bin/asm
+ acse=$(CURDIR)/../bin/acse
+ export asm acse
+-dirs:=arrays sum dowhile fact mult_table power semi assign arrays arrays2 misc
++dirs:=arrays sum dowhile fact mult_table power semi assign arrays arrays2 misc \
++      vect_operations
+ 
+ test :
+ 	for i in $(dirs); do $(MAKE) -C $$i -f ../Makefile.test ; done
+diff -r 4a0654b18dbe tests/vect_operations/vec_add.src
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/tests/vect_operations/vec_add.src	Thu Nov 29 10:57:56 2012 +0100
+@@ -0,0 +1,10 @@
++/*
++ * Author: Ettore Speziale
++ * vec_add.src
++ */
++
++int a[10];
++int b[10];
++int c[10];
++
++vec_add(c, a, b);
+diff -r 4a0654b18dbe tests/vect_operations/vec_sub.src
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/tests/vect_operations/vec_sub.src	Thu Nov 29 10:57:56 2012 +0100
+@@ -0,0 +1,10 @@
++/*
++ * Author: Ettore Speziale
++ * vec_sub.src
++ */
++
++int a[10];
++int b[10];
++int c[10];
++
++vec_sub(c, a, b);

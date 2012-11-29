@@ -1,0 +1,116 @@
+
+diff -r 4a0654b18dbe acse/Acse.lex
+--- a/acse/Acse.lex	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.lex	Tue Jan 11 16:32:41 2011 +0100
+@@ -95,6 +95,8 @@
+ "if"              { return IF; }
+ "int"             { yylval.intval = INTEGER_TYPE; return TYPE; }
+ "while"           { return WHILE; }
++"foreach"         { return FOREACH; }
++"in"              { return IN; }
+ "return"          { return RETURN; }
+ "read"            { return READ; }
+ "write"           { return WRITE; }
+diff -r 4a0654b18dbe acse/Acse.y
+--- a/acse/Acse.y	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.y	Tue Jan 11 16:32:41 2011 +0100
+@@ -120,11 +120,13 @@
+ %token COMMA
+ %token FOR
+ %token RETURN
++%token IN
+ %token READ
+ %token WRITE
+ 
+ %token <label> DO
+ %token <while_stmt> WHILE
++%token <while_stmt> FOREACH
+ %token <label> IF
+ %token <label> ELSE
+ %token <intval> TYPE
+@@ -249,6 +251,7 @@
+ 
+ control_statement : if_statement         { /* does nothing */ }
+             | while_statement            { /* does nothing */ }
++            | foreach_statement          { /* does nothing */ }
+             | do_while_statement SEMI    { /* does nothing */ }
+             | return_statement SEMI      { /* does nothing */ }
+ ;
+@@ -386,6 +389,50 @@
+                   }
+ ;
+                   
++foreach_statement : FOREACH {
++                      $1.label_condition = newLabel(program);
++                      $1.label_end = newLabel(program);
++                    }
++                    LPAR IDENTIFIER IN IDENTIFIER RPAR
++                    {
++                      t_axe_variable *iter = getVariable(program, $4);
++                      if(iter->isArray) {
++                        fprintf(stderr, "Error: expected scalar variable\n");
++                        exit(-1);
++                      }
++
++                      t_axe_variable *array = getVariable(program, $6);
++                      if(!array->isArray) {
++                        fprintf(stderr, "Error: expected array variable\n");
++                        exit(-1);
++                      }
++
++                      int tmp = getNewRegister(program);
++                      int cnt = gen_load_immediate(program, 0);
++
++                      assignLabel(program, $1.label_condition);
++
++                      gen_subi_instruction(program, tmp, cnt, array->arraySize);
++                      gen_beq_instruction(program, $1.label_end, 0);
++
++                      int elem = loadArrayElement(program,
++                                                  $4,
++                                                  create_expression(cnt,
++                                                                    REGISTER));
++                      gen_addi_instruction(program,
++                                           get_symbol_location(program, $4, 0),
++                                           elem,
++                                           0);
++
++                      gen_addi_instruction(program, cnt, cnt, 1);
++                    }
++                    code_block
++                    {
++                      gen_bt_instruction(program, $1.label_condition, 0);
++                      assignLabel(program, $1.label_end);
++                    }
++                    ;
++
+ do_while_statement  : DO
+                      {
+                         /* the label that points to the address where to jump if
+diff -r 4a0654b18dbe tests/Makefile
+--- a/tests/Makefile	Tue Feb 02 17:19:12 2010 +0100
++++ b/tests/Makefile	Tue Jan 11 16:32:41 2011 +0100
+@@ -1,7 +1,8 @@
+ asm=$(CURDIR)/../bin/asm
+ acse=$(CURDIR)/../bin/acse
+ export asm acse
+-dirs:=arrays sum dowhile fact mult_table power semi assign arrays arrays2 misc
++dirs:=arrays sum dowhile fact mult_table power semi assign arrays arrays2 misc \
++      foreach
+ 
+ test :
+ 	for i in $(dirs); do $(MAKE) -C $$i -f ../Makefile.test ; done
+diff -r 4a0654b18dbe tests/foreach/foreach.src
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/tests/foreach/foreach.src	Tue Jan 11 16:32:41 2011 +0100
+@@ -0,0 +1,10 @@
++
++int i;
++int a[3];
++
++a[0] = 7;
++a[1] = 14;
++a[2] = 21;
++
++foreach(i in a)
++  write(i);

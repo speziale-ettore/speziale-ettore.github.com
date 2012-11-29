@@ -1,0 +1,189 @@
+diff -r 4a0654b18dbe acse/Acse.lex
+--- a/acse/Acse.lex	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.lex	Thu Nov 29 10:59:56 2012 +0100
+@@ -90,6 +90,9 @@
+ ","               { return COMMA; }
+ 
+ "do"              { return DO; }
++"try"             { return TRY; }
++"catch"           { return CATCH; }
++"throw"           { return THROW; }
+ "else"            { return ELSE; }
+ "for"             { return FOR; }
+ "if"              { return IF; }
+diff -r 4a0654b18dbe acse/Acse.y
+--- a/acse/Acse.y	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/Acse.y	Thu Nov 29 10:59:56 2012 +0100
+@@ -90,6 +90,8 @@
+ 
+ t_io_infos *file_infos;    /* input and output files used by the compiler */
+ 
++t_list *try_stack = NULL;  /* stack of try-catch statement */
++
+ %}
+ 
+ %expect 1
+@@ -106,6 +108,7 @@
+    t_list *list;
+    t_axe_label *label;
+    t_while_statement while_stmt;
++   t_try_catch_statement try_catch_stmt;
+ } 
+ /*=========================================================================
+                                TOKENS 
+@@ -123,6 +126,10 @@
+ %token READ
+ %token WRITE
+ 
++%token <try_catch_stmt> TRY
++%token CATCH
++%token THROW
++
+ %token <label> DO
+ %token <while_stmt> WHILE
+ %token <label> IF
+@@ -250,6 +257,8 @@
+ control_statement : if_statement         { /* does nothing */ }
+             | while_statement            { /* does nothing */ }
+             | do_while_statement SEMI    { /* does nothing */ }
++            | try_catch_statement        { /* does nothing */ }
++            | throw_statement SEMI       { /* does nothing */ }
+             | return_statement SEMI      { /* does nothing */ }
+ ;
+ 
+@@ -408,6 +417,46 @@
+                      }
+ ;
+ 
++try_catch_statement : TRY
++                      {
++                           /* create a new try-catch statement */
++                           $1 = create_try_catch_statement();
++                           $1.label_catcher = newLabel(program);
++                           $1.label_end = newLabel(program);
++
++                           /* push it, for throw translation */
++                           try_stack = addFirst(try_stack, &$1);
++                      }
++                      code_block
++                      {
++                           /* end of try block, need to jump the catcher */
++                           gen_bt_instruction(program, $1.label_end, 0);
++
++                           /* pop try-catch pointer */
++                           removeFirst(try_stack);
++
++                           /* here starts the catch block */
++                           assignLabel(program, $1.label_catcher);
++                      }
++                      CATCH code_block
++                      {
++                           /* fix end label */
++                           assignLabel(program, $1.label_end);
++                      }
++;
++
++throw_statement : THROW
++                  {
++                       /* stack empty, throw not inside a try block */
++                       if(!getLength(try_stack))
++                         notifyError(AXE_SYNTAX_ERROR);
++
++                       /* jump to catcher */
++                       t_try_catch_statement *stmt = try_stack->data;
++                       gen_bt_instruction(program, stmt->label_catcher, 0);
++                  }
++;
++
+ return_statement : RETURN
+             {
+                /* insert an HALT instruction */
+diff -r 4a0654b18dbe acse/axe_struct.c
+--- a/acse/axe_struct.c	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/axe_struct.c	Thu Nov 29 10:59:56 2012 +0100
+@@ -100,6 +100,15 @@
+    return statement;
+ }
+ 
++t_try_catch_statement create_try_catch_statement() {
++  t_try_catch_statement statement;
++
++  statement.label_catcher = NULL;
++  statement.label_end = NULL;
++
++  return statement;
++}
++
+ t_axe_label * alloc_label(int value)
+ {
+    t_axe_label *result;
+diff -r 4a0654b18dbe acse/axe_struct.h
+--- a/acse/axe_struct.h	Tue Feb 02 17:19:12 2010 +0100
++++ b/acse/axe_struct.h	Thu Nov 29 10:59:56 2012 +0100
+@@ -114,6 +114,13 @@
+                                     * that follows the while construct */
+ } t_while_statement;
+ 
++typedef struct t_try_catch_statement
++{
++  t_axe_label *label_catcher; /* this label points to the catch block */
++  t_axe_label *label_end;     /* this label points to the instruction following
++                               * the catcher */
++} t_try_catch_statement;
++
+ /* create a label */
+ extern t_axe_label * alloc_label(int value);
+ 
+@@ -123,6 +130,9 @@
+ /* create an instance that will mantain infos about a while statement */
+ extern t_while_statement create_while_statement();
+ 
++/* create an instance that will maintain info about a try-catch statement */
++extern t_try_catch_statement create_try_catch_statement();
++
+ /* create an instance of `t_axe_register' */
+ extern t_axe_register * alloc_register(int ID, int indirect);
+ 
+diff -r 4a0654b18dbe tests/Makefile
+--- a/tests/Makefile	Tue Feb 02 17:19:12 2010 +0100
++++ b/tests/Makefile	Thu Nov 29 10:59:56 2012 +0100
+@@ -1,7 +1,8 @@
+ asm=$(CURDIR)/../bin/asm
+ acse=$(CURDIR)/../bin/acse
+ export asm acse
+-dirs:=arrays sum dowhile fact mult_table power semi assign arrays arrays2 misc
++dirs:=arrays sum dowhile fact mult_table power semi assign arrays arrays2 misc \
++      exception
+ 
+ test :
+ 	for i in $(dirs); do $(MAKE) -C $$i -f ../Makefile.test ; done
+diff -r 4a0654b18dbe tests/exception/exception.src
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/tests/exception/exception.src	Thu Nov 29 10:59:56 2012 +0100
+@@ -0,0 +1,7 @@
++
++try {
++  throw;
++  write(0);
++} catch {
++  write(1);
++}
+diff -r 4a0654b18dbe tests/exception/nested-exception.src
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/tests/exception/nested-exception.src	Thu Nov 29 10:59:56 2012 +0100
+@@ -0,0 +1,15 @@
++
++try {
++  try {
++    throw;
++    write(0);
++
++  } catch {
++    write(1);
++  }
++
++  write(2);
++
++} catch {
++  write(3);
++}
