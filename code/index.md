@@ -17,7 +17,8 @@ Here you can find a list of projects I uploaded to GitHub.
 Homepage
 --------
 
-My GitHub pages site repository. As you can see in the footer, I just put some contents on top of [Jekyll][www/jekyll] together with a theme from [Mark Reid][www/markReid] -- thank you.
+My GitHub pages site repository.
+As you can see in the footer, I just put some contents on top of [Jekyll][www/jekyll] together with a theme from [Mark Reid][www/markReid] -- thank you.
 
 * [speziale-ettore.github.com](https://github.com/speziale-ettore/speziale-ettore.github.com)
 
@@ -44,6 +45,16 @@ I can run simple OpenCL applications, but, unfortunately, I had not much time to
 I really hope to find some spare time in the future to continue improving on it.
 
 * [OpenCRun](https://github.com/speziale-ettore/OpenCRun)
+
+Beamer DEI Theme
+----------------
+
+I did the Ph.D. at Dipartimento di Elettronica e Informazione -- Politecnico di Milano.
+Unfortunately, the template for slides is available only in the PowerPoint format, so I decided to try porting it to Beamer.
+
+Code is on GitHub, let's see what I will produce.
+
+* [beamer-dei-v2](https://github.com/speziale-ettore/beamer-dei-v2)
 
 [www/jekyll]: http://github.com/mojombo/jekyll
 [www/markReid]: http://mark.reid.name
