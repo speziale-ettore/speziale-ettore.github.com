@@ -14,13 +14,7 @@ I am very proud of my village, because it is very nice, there is a good climate,
 Curriculum Vitae
 ---------------
 
-My curriculum is available in three format:
-
-* [Italian](/info/download/curriculum-vitae-it.pdf)
-* [English](/info/download/curriculum-vitae-en.pdf)
-* [United States](/info/download/curriculum-vitae-us.pdf)
-
-The firsts two follow the European curriculum format, while the latter is redacted in order to match United States conventions.
+My curriculum vitae can be downloaded [here](/info/download/curriculum-vitae.pdf).
 
 Publications
 ------------
