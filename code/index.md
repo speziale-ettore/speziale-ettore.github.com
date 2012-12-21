@@ -52,9 +52,13 @@ Beamer DEI Theme
 I did the Ph.D. at Dipartimento di Elettronica e Informazione -- Politecnico di Milano.
 Unfortunately, the template for slides is available only in the PowerPoint format, so I decided to try porting it to Beamer.
 
-Code is on GitHub, let's see what I will produce.
+Code repository is on GitHub:
 
 * [beamer-dei-v2](https://github.com/speziale-ettore/beamer-dei-v2)
+
+Here are release tarballs and previews:
+
+* Version 0.1: [beamer-dei-v2-0.1.tar.gz](/code/download/beamer-dei-v2/beamer-dei-v2-0.1.tar.gz), [themedei-test-0.1.pdf](/code/download/beamer-dei-v2/themedei-test-0.1.pdf)
 
 [www/jekyll]: http://github.com/mojombo/jekyll
 [www/markReid]: http://mark.reid.name
