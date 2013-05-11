@@ -7,9 +7,12 @@ title: Home
 I am Ettore Speziale, an Italian programmer with special interest in compilers, parallel runtimes and hardware.
 This site contains material about academic research, teaching, and some personal information.
 
-I am doing a Ph.D. in the [Formal Languages and Compilers Group][www/flac] of Politecnico di Milano.
+I did a Ph.D. in the [Formal Languages and Compilers Group][www/flac] of Politecnico di Milano.
 My Ph.D is about compilers and runtime technologies for parallel programming models.
-While waiting for the final defense, I am doing an internship at [Barcelona Supercomputing Center][www/bsc].
+During my studies I did an internship at [Barcelona Supercomputing Center][www/bsc], where I developed a small OpenCL runtime prototype for supercomputing clusters.
+
+Now I am working at [ARM][www/arm], in the Media Processing Division.
+My main duty is developing/maintaining the ARM OpenCL runtime for the Mali T6xx GPGPUs family, in particular the interaction between the runtime itself and the OpenCL compiler.
 
 For Students
 ------------
@@ -37,3 +40,4 @@ Please notice that this site is freely accessible only if you recognize that Jav
 
 [www/flac]: http://compilergroup.elet.polimi.it
 [www/bsc]: http://www.bsc.es
+[www/arm]: http://www.arm.com
