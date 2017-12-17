@@ -7,7 +7,8 @@
 permalink: /:categories/:year/:month/:day/:title
 
 exclude: [".rvmrc", ".rbenv-version", "README.md", "Rakefile", "changelog.md"]
-highlighter: pygments
+auto: true
+pygments: true
 
 # Themes are encouraged to use these universal variables so be sure to set them if your theme uses them.
 #
@@ -19,7 +20,7 @@ author :
   github : speziale-ettore
 
 # The production_url is only used when full-domain names are needed
-# such as sitemap.txt
+# such as sitemap.txt 
 # Most places will/should use BASE_PATH to make the urls
 #
 # If you have set a CNAME (pages.github.com) set your custom domain here.
@@ -38,11 +39,11 @@ JB :
   # However this value will be dynamically changed depending on your deployment situation.
   #
   # CNAME (http://yourcustomdomain.com)
-  #   DO NOT SET BASE_PATH
+  #   DO NOT SET BASE_PATH 
   #   (urls will be prefixed with "/" and work relatively)
   #
   # GitHub Pages (http://username.github.com)
-  #   DO NOT SET BASE_PATH
+  #   DO NOT SET BASE_PATH 
   #   (urls will be prefixed with "/" and work relatively)
   #
   # GitHub Project Pages (http://username.github.com/project-name)
