@@ -20,7 +20,7 @@ Homepage
 My GitHub pages site repository.
 As you can see in the footer, I just put some contents on top of [Jekyll][www/jekyll] together with a theme from [Mark Reid][www/markReid] -- thank you.
 
-* [speziale-ettore.github.com](https://github.com/speziale-ettore/speziale-ettore.github.com)
+* [speziale-ettore.github.io](https://github.com/speziale-ettore/speziale-ettore.github.com)
 
 Code Optimization and Transformation Passes
 -------------------------------------------
